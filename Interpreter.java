@@ -155,7 +155,7 @@ public class Interpreter
             int dest = getRegisterIndexFromString(args[1]);
             updateRegister(dest,line+1);
             regBankIndex++;
-            System.out.println(regBankIndex);
+            //System.out.println(regBankIndex);
             gotoLine = op1+1;
             return;
         }
@@ -174,10 +174,15 @@ public class Interpreter
             int op1 = StringToVal(args[0]);
             int offset = Integer.parseInt(args[1]);
             if (regBankIndex > 0) regBankIndex--;
-            System.out.println(regBankIndex);
+            //System.out.println(regBankIndex);
             gotoLine = op1+offset+1;
             return;
         }
+        if (applyOperator(data,line,"add ",'+')) return;
+        if (applyOperator(data,line,"sub ",'-')) return;
+        if (applyOperator(data,line,"xor ",'^')) return;
+
+        /*
         if (data.toLowerCase().contains("add "))
         {
             data = data.replaceAll("(?i)add ", "");
@@ -194,12 +199,49 @@ public class Interpreter
             updateRegister(destIndex,op1+op2);
             return;
         }
-
+        */
         if (!data.isEmpty()) {
             if (!data.trim().isEmpty()) setErrorProtocol(2,line,new String[]{data});
         }
         if (finalLine) setErrorProtocol(5,line,new String[]{data});
 
+    }
+
+    public static boolean applyOperator(String data,int line,String token, char operator)
+    {
+
+        if (data.toLowerCase().contains(token))
+        {
+            data = data.replaceAll("(?i)"+token, "");
+            data = data.replace(" ", "");
+            String[] args = data.split(",");
+            if (args.length < 3)
+            {
+                setErrorProtocol(1,line,new String[]{"3", Integer.toString(args.length)});
+                return true;
+            }
+            int op1 = getRegisterContents(getRegisterIndexFromString(args[0]));
+            int op2 = StringToVal(args[1]);
+            int destIndex = getRegisterIndexFromString(args[2]);
+            int result = 0;
+            switch (operator)
+            {
+                case '+':
+                    result = op1+op2;
+                    break;
+                case '-':
+                    result = op1-op2;
+                    break;
+                case '^':
+                    result = op1^op2;
+                    break;
+            }
+            updateRegister(destIndex,result);
+            return true;
+        }else
+        {
+            return false;
+        }
     }
 
     public static int getRegisterContents(int index)
