@@ -28,17 +28,12 @@ public class Interpreter
     static int errorCount = 0;
     public static void main(String[] args) {
         File file = new File("input.txt"); //to be replaced with user input
-
         setup();
 
         System.out.println("---START OF PROGRAM---\n");
         parse(file,line);
         System.out.println("\n---END OF PROGRAM---");
 
-        /*
-        updateRegister(15,100);
-        regBankIndex++;
-        */
 
         debugPrintRegisters(0, 137);
 
@@ -155,7 +150,6 @@ public class Interpreter
             int dest = getRegisterIndexFromString(args[1]);
             updateRegister(dest,line+1);
             regBankIndex++;
-            //System.out.println(regBankIndex);
             gotoLine = op1+1;
             return;
         }
@@ -182,24 +176,6 @@ public class Interpreter
         if (applyOperator(data,line,"sub ",'-')) return;
         if (applyOperator(data,line,"xor ",'^')) return;
 
-        /*
-        if (data.toLowerCase().contains("add "))
-        {
-            data = data.replaceAll("(?i)add ", "");
-            data = data.replace(" ", "");
-            String[] args = data.split(",");
-            if (args.length < 3)
-            {
-                setErrorProtocol(1,line,new String[]{"3", Integer.toString(args.length)});
-                return;
-            }
-            int op1 = getRegisterContents(getRegisterIndexFromString(args[0]));
-            int op2 = StringToVal(args[1]);
-            int destIndex = getRegisterIndexFromString(args[2]);
-            updateRegister(destIndex,op1+op2);
-            return;
-        }
-        */
         if (!data.isEmpty()) {
             if (!data.trim().isEmpty()) setErrorProtocol(2,line,new String[]{data});
         }
@@ -304,7 +280,7 @@ public class Interpreter
     {
         char rank = 65;
         int count = 31;
-        for (int i = end; i > start; i--)
+        for (int i = end; i >= start; i--)
         {
             String type = "";
             if (i < 10) type = "Global";

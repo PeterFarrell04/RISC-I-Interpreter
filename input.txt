@@ -1,10 +1,8 @@
-
 my_func:
     add r1, #100, r1
     add r26, #10, r26
     ret (r31)0
-    add r0, r0, r0
-
+    xor r0, r0, r0
 main:
     add r1, #5, r1 ;comment
     add r0, #5, r10
