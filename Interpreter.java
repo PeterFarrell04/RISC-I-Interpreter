@@ -13,6 +13,7 @@ public class Interpreter
     static HashMap<String, Integer> dict = new HashMap<String, Integer>();
     static int gotoLine;
     static boolean mainFound = false;
+    static boolean finalLine = false;
     static int line = 0;
     public static void main(String[] args) {
         File file = new File("input.txt"); //to be replaced with user input
@@ -29,7 +30,7 @@ public class Interpreter
     {
         reg = new int[138];
         reg[0] = 0;
-        reg[31] = 0;
+        reg[31] = -10;
         gotoLine = -1;
         mainFound = false;
         errorFlag = -1;
@@ -39,6 +40,7 @@ public class Interpreter
     {
         if (mainFound) debugPrintRegisters(1,1);
         int nl = -1;
+
         if (gotoLine != -1)
         {
             nl = gotoLine;
@@ -54,6 +56,7 @@ public class Interpreter
                 l++;
             }
             lex(data,l);
+            if (gotoLine < -1) finalLine = true;
 
             //System.out.println(data);
             if (errorFlag != -1)
@@ -63,7 +66,8 @@ public class Interpreter
             }
             if (s.hasNextLine())
             {
-                if (nl == -1) parse(f,l+1);
+
+                if (nl <= -1) parse(f,l+1);
                 else parse(f,nl);
             }
             else
@@ -75,6 +79,16 @@ public class Interpreter
                     if (dict.containsKey("main")) parse(f,dict.get("main")+1);
                     else {
                         setErrorProtocol(3,-1,null);
+                        System.out.println(errorString);
+                    }
+                }else
+                {
+                    if (finalLine)
+                    {
+                        return;
+                    }else
+                    {
+                        setErrorProtocol(4,-1,null);
                         System.out.println(errorString);
                     }
                 }
@@ -236,6 +250,9 @@ public class Interpreter
                 break;
             case 3:
                 e+= "Unable to find start tag \"main\"";
+                break;
+            case 4:
+                e+= "Program does not return from main";
                 break;
             default:
                 e += "Unkown Error";
