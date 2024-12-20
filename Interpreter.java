@@ -29,7 +29,7 @@ public class Interpreter
     {
         reg = new int[138];
         reg[0] = 0;
-        reg[31] = 99;
+        reg[31] = 0;
         gotoLine = -1;
         mainFound = false;
         errorFlag = -1;
@@ -68,6 +68,7 @@ public class Interpreter
             }
             else
             {
+
                 if (!mainFound)
                 {
                     mainFound = true;
@@ -156,7 +157,7 @@ public class Interpreter
         }
 
         if (!data.isEmpty()) {
-                setErrorProtocol(2,-1,new String[]{data});
+            if (!data.trim().isEmpty()) setErrorProtocol(2,-1,new String[]{data});
         }
 
     }

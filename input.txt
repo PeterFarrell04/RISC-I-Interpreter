@@ -10,3 +10,5 @@ main:
     callr my_func, r15
     add r1, #1, r1
     add r1, #12, r1
+    ;ret (r31)0
+    add r0, r0, r0
