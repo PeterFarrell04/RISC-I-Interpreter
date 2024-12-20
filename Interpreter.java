@@ -7,6 +7,7 @@ import java.util.Scanner;
 
 public class Interpreter
 {
+    static boolean returnOnErrors = false;
     static int errorFlag = -1;
     static String errorString = "";
     static int [] reg;
@@ -15,6 +16,7 @@ public class Interpreter
     static boolean mainFound = false;
     static boolean finalLine = false;
     static int line = 0;
+    static int errorCount = 0;
     public static void main(String[] args) {
         File file = new File("input.txt"); //to be replaced with user input
 
@@ -23,6 +25,7 @@ public class Interpreter
         parse(file,line);
         System.out.println("\n---END OF PROGRAM---");
         debugPrintRegisters(0, 15);
+        System.out.println("Total Errors: " + errorCount);
 
     }
 
@@ -34,11 +37,12 @@ public class Interpreter
         gotoLine = -1;
         mainFound = false;
         errorFlag = -1;
+        errorCount = 0;
     }
 
     public static void parse(File f,int lineStart)
     {
-        if (mainFound) debugPrintRegisters(1,1);
+        //if (mainFound) debugPrintRegisters(1,1);
         int nl = -1;
 
         if (gotoLine != -1)
@@ -62,7 +66,7 @@ public class Interpreter
             if (errorFlag != -1)
             {
                 System.out.println(errorString);
-                return;
+                if (returnOnErrors) return;
             }
             if (s.hasNextLine())
             {
@@ -229,6 +233,7 @@ public class Interpreter
 
     public static void setErrorProtocol(int flag, int line,String[] args)
     {
+        errorCount++;
         errorFlag = flag;
         String e = "";
         if (line > -1) {
