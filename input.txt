@@ -1,0 +1,10 @@
+
+my_func
+    add r0, #100, r1
+
+
+main:
+    add r0, #6, r1
+    add r1, r1, r1
+    add r1, r1, r2
+;this is a comment
