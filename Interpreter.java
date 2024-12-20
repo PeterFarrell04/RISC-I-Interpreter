@@ -261,14 +261,19 @@ public class Interpreter
     public static void debugPrintRegisters(int start,int end)
     {
         char rank = 65;
-        int count = 25;
+        int count = 31;
         for (int i = end; i > start; i--)
         {
             String type = "";
             if (i < 10) type = "Global";
             if (i >= 10)
             {
-                //type = rank+":"+count;
+                type = rank+":"+count;
+                if (count <= 15)
+                {
+                    char next = (char) (rank+1);
+                    type = next + ":" + (count+16) + "&" + type;
+                }
                 count--;
                 if (count < 10)
                 {
