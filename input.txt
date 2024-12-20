@@ -1,14 +1,16 @@
 
 my_func:
     add r1, #100, r1
-    ret (r15)0
+    add r26, #10, r26
+    ret (r31)0
     add r0, r0, r0
 
 main:
-    add r0, #6, r1 ;comment
-garbage
+    add r1, #5, r1 ;comment
+    add r0, #5, r10
     callr my_func, r15
-    add r1, #1, r1
-    add r1, #12
-    ;ret (r31)0
-    ;add r0, r0, r0
+    add r1, #5, r1
+    add r1, #10, r1
+    ret (r31)0
+    add r0, r0, r0
+

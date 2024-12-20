@@ -7,10 +7,19 @@ import java.util.Scanner;
 
 public class Interpreter
 {
+    //options for calling convention
+    static int globalUpTo = 9;
+    static int childParamsUpTo = 15;
+    static int localVarsUpTo = 25;
+    static int parentParamsUpTo = 31;
+
+    //global variables
     static boolean returnOnErrors = false;
     static int errorFlag = -1;
     static String errorString = "";
     static int [] reg;
+
+    static int regBankIndex = 0;
     static HashMap<String, Integer> dict = new HashMap<String, Integer>();
     static int gotoLine;
     static boolean mainFound = false;
@@ -21,10 +30,18 @@ public class Interpreter
         File file = new File("input.txt"); //to be replaced with user input
 
         setup();
+
         System.out.println("---START OF PROGRAM---\n");
         parse(file,line);
         System.out.println("\n---END OF PROGRAM---");
-        debugPrintRegisters(0, 15);
+
+        /*
+        updateRegister(15,100);
+        regBankIndex++;
+        */
+
+        debugPrintRegisters(0, 137);
+
         System.out.println("Total Errors: " + errorCount);
 
     }
@@ -33,7 +50,7 @@ public class Interpreter
     {
         reg = new int[138];
         reg[0] = 0;
-        reg[31] = -10;
+        reg[137] = -10;
         gotoLine = -1;
         mainFound = false;
         errorFlag = -1;
@@ -60,7 +77,6 @@ public class Interpreter
                 l++;
             }
             lex(data,l);
-            if (gotoLine < -1) finalLine = true;
 
             //System.out.println(data);
             if (errorFlag != -1)
@@ -68,8 +84,9 @@ public class Interpreter
                 System.out.println(errorString);
                 if (returnOnErrors) return;
             }
-            if (s.hasNextLine())
+            if (s.hasNextLine() && !finalLine)
             {
+                if (gotoLine < -1) finalLine = true;
 
                 if (nl <= -1) parse(f,l+1);
                 else parse(f,nl);
@@ -137,6 +154,8 @@ public class Interpreter
             int op1 = StringToVal(args[0]);
             int dest = getRegisterIndexFromString(args[1]);
             updateRegister(dest,line+1);
+            regBankIndex++;
+            System.out.println(regBankIndex);
             gotoLine = op1+1;
             return;
         }
@@ -154,6 +173,8 @@ public class Interpreter
             }
             int op1 = StringToVal(args[0]);
             int offset = Integer.parseInt(args[1]);
+            if (regBankIndex > 0) regBankIndex--;
+            System.out.println(regBankIndex);
             gotoLine = op1+offset+1;
             return;
         }
@@ -167,7 +188,7 @@ public class Interpreter
                 setErrorProtocol(1,line,new String[]{"3", Integer.toString(args.length)});
                 return;
             }
-            int op1 = reg[getRegisterIndexFromString(args[0])];
+            int op1 = getRegisterContents(getRegisterIndexFromString(args[0]));
             int op2 = StringToVal(args[1]);
             int destIndex = getRegisterIndexFromString(args[2]);
             updateRegister(destIndex,op1+op2);
@@ -175,16 +196,30 @@ public class Interpreter
         }
 
         if (!data.isEmpty()) {
-            if (!data.trim().isEmpty()) setErrorProtocol(2,-1,new String[]{data});
+            if (!data.trim().isEmpty()) setErrorProtocol(2,line,new String[]{data});
         }
+        if (finalLine) setErrorProtocol(5,line,new String[]{data});
 
+    }
+
+    public static int getRegisterContents(int index)
+    {
+        if (index <= globalUpTo) {
+            return reg[index];
+        }else {
+            return reg[(16*(8-regBankIndex)) - (31-index)+9];
+        }
     }
 
     public static void updateRegister(int index, int value)
     {
         if (index > 0)
         {
-            reg[index] = value;
+            if (index <= globalUpTo) {
+                reg[index] = value;
+            }else {
+                reg[(16*(8-regBankIndex)) - (31-index)+9] = value;
+            }
         }
     }
     public static int getRegisterIndexFromString(String s)
@@ -204,7 +239,7 @@ public class Interpreter
         if (s.toLowerCase().contains("r")) {
             s = s.replaceAll("(?i)r", "");
             int register = Integer.parseInt(s);
-            return reg[register];
+            return getRegisterContents(register);
         }
         if (s.toLowerCase().contains("#"))
         {
@@ -219,15 +254,32 @@ public class Interpreter
                 return dict.get(key);
             }
         }
-        setErrorProtocol(2,-1,new String[]{"s"});
+        setErrorProtocol(2,-1,new String[]{s});
         return -1000; //replace with proper error handling
     }
 
     public static void debugPrintRegisters(int start,int end)
     {
-        for (int i = start; i <= end; i++)
+        char rank = 65;
+        int count = 25;
+        for (int i = end; i > start; i--)
         {
-            System.out.println("R" + i + " = " + reg[i] + ",");
+            String type = "";
+            if (i < 10) type = "Global";
+            if (i >= 10)
+            {
+                //type = rank+":"+count;
+                count--;
+                if (count < 10)
+                {
+                    rank++;
+                    count = 25;
+                }
+            }
+
+
+
+            System.out.println("("+type+"):"+"R" + i + " = " + reg[i] + ",");
         }
     }
 
@@ -258,6 +310,9 @@ public class Interpreter
                 break;
             case 4:
                 e+= "Program does not return from main";
+                break;
+            case 5:
+                e+= "No delay slot / instruction after final return";
                 break;
             default:
                 e += "Unkown Error";
