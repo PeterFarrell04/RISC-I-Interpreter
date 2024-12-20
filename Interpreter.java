@@ -11,7 +11,7 @@ public class Interpreter
     static String errorString = "";
     static int [] reg;
     static HashMap<String, Integer> dict = new HashMap<String, Integer>();
-    static int returnLine;
+    static int gotoLine;
     static boolean mainFound = false;
     static int line = 0;
     public static void main(String[] args) {
@@ -21,7 +21,7 @@ public class Interpreter
         System.out.println("---START OF PROGRAM---\n");
         parse(file,line);
         System.out.println("\n---END OF PROGRAM---");
-        debugPrintRegisters(0, 10);
+        debugPrintRegisters(0, 15);
 
     }
 
@@ -29,14 +29,21 @@ public class Interpreter
     {
         reg = new int[138];
         reg[0] = 0;
-        returnLine = -1;
+        reg[31] = 99;
+        gotoLine = -1;
         mainFound = false;
         errorFlag = -1;
     }
 
     public static void parse(File f,int lineStart)
     {
-
+        if (mainFound) debugPrintRegisters(1,1);
+        int nl = -1;
+        if (gotoLine != -1)
+        {
+            nl = gotoLine;
+            gotoLine = -1;
+        }
         int l = -1;
         try {
             Scanner s = new Scanner(f);
@@ -48,13 +55,17 @@ public class Interpreter
             }
             lex(data,l);
 
-            System.out.println(data);
+            //System.out.println(data);
             if (errorFlag != -1)
             {
                 System.out.println(errorString);
                 return;
             }
-            if (s.hasNextLine()) parse(f,l+1);
+            if (s.hasNextLine())
+            {
+                if (nl == -1) parse(f,l+1);
+                else parse(f,nl);
+            }
             else
             {
                 if (!mainFound)
@@ -76,6 +87,10 @@ public class Interpreter
 
     public static void lex(String data, int line)
     {
+        if (data.contains(";"))
+        {
+            data = data.substring(0,data.indexOf(';'));
+        }
         if (data.contains(":"))
         {
             data = data.replace(":","");
@@ -89,6 +104,40 @@ public class Interpreter
             return;
         }
         if (!mainFound) return;
+        if (data.toLowerCase().contains("callr "))
+        {
+            data = data.replaceAll("(?i)callr ", "");
+            data = data.replace(" ", "");
+            String[] args = data.split(",");
+
+            if (args.length < 2)
+            {
+                setErrorProtocol(1,line,new String[]{"2", Integer.toString(args.length)});
+                return;
+            }
+            int op1 = StringToVal(args[0]);
+            int dest = getRegisterIndexFromString(args[1]);
+            updateRegister(dest,line+1);
+            gotoLine = op1+1;
+            return;
+        }
+        if (data.toLowerCase().contains("ret "))
+        {
+            data = data.replaceAll("(?i)ret ", "");
+            data = data.replace(" ", "");
+            data = data.replace("(", "");
+            String[] args = data.split("\\)");
+
+            if (args.length < 2)
+            {
+                setErrorProtocol(1,line,new String[]{"2", Integer.toString(args.length)});
+                return;
+            }
+            int op1 = StringToVal(args[0]);
+            int offset = Integer.parseInt(args[1]);
+            gotoLine = op1+offset+1;
+            return;
+        }
         if (data.toLowerCase().contains("add "))
         {
             data = data.replaceAll("(?i)add ", "");
@@ -107,17 +156,13 @@ public class Interpreter
         }
 
         if (!data.isEmpty()) {
-            if (data.charAt(0) != ';')
-            {
                 setErrorProtocol(2,-1,new String[]{data});
-            }
         }
 
     }
 
     public static void updateRegister(int index, int value)
     {
-        //if (!dict.containsKey("main")) setErrorProtocol(3,-1,null);
         if (index > 0)
         {
             reg[index] = value;
@@ -146,6 +191,14 @@ public class Interpreter
         {
             s = s.replace("#","");
             return Integer.parseInt(s);
+        }
+        String[] keys = dict.keySet().toArray(new String[0]);
+        for (String key : keys)
+        {
+            if (key.equals(s))
+            {
+                return dict.get(key);
+            }
         }
         setErrorProtocol(2,-1,new String[]{"s"});
         return -1000; //replace with proper error handling
