@@ -220,6 +220,11 @@ public class Interpreter
                 if ((!negativeFlag) || zeroFlag) gotoLine = jumpTo+1;
                 return;
             }
+            if (args[0].equals("mp"))
+            {
+                gotoLine = jumpTo+1;
+                return;
+            }
 
             setErrorProtocol(7,line,new String[]{args[0]});
             return;
@@ -245,9 +250,17 @@ public class Interpreter
             gotoLine = op1+offset+1;
             return;
         }
-        if (applyOperator(data,line,"add ",'+')) return;
-        if (applyOperator(data,line,"sub ",'-')) return;
-        if (applyOperator(data,line,"xor ",'^')) return;
+        //standard operators
+        if (applyOperator(data,line,"add ","+")) return;
+        if (applyOperator(data,line,"sub ","-")) return;
+        if (applyOperator(data,line,"xor ","^")) return;
+        if (applyOperator(data,line,"and ","&")) return;
+        if (applyOperator(data,line,"or ","|")) return;
+        if (applyOperator(data,line,"sll ","<<")) return;
+        if (applyOperator(data,line,"slr ",">>")) return;
+
+
+
 
         if (!data.isEmpty()) {
             if (!data.trim().isEmpty()) setErrorProtocol(2,line,new String[]{data});
@@ -256,7 +269,7 @@ public class Interpreter
 
     }
 
-    public static boolean applyOperator(String data,int line,String token, char operator)
+    public static boolean applyOperator(String data,int line,String token, String operator)
     {
 
         if (data.toLowerCase().startsWith(token)) {
@@ -272,15 +285,29 @@ public class Interpreter
             int destIndex = getRegisterIndexFromString(args[2]);
             int result = 0;
             switch (operator) {
-                case '+':
+                case "+":
                     result = op1 + op2;
                     break;
-                case '-':
+                case "-":
                     result = op1 - op2;
                     break;
-                case '^':
+                case "^":
                     result = op1 ^ op2;
                     break;
+                case "|":
+                    result = op1 | op2;
+                    break;
+                case "&":
+                    result = op1 & op2;
+                    break;
+                case "<<":
+                    result = op1 << op2;
+                    break;
+                case ">>":
+                    result = op1 >> op2;
+                    break;
+
+
             }
             if (args.length > 3)
             {

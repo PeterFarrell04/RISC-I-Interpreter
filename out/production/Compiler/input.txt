@@ -1,7 +1,7 @@
 my_func:
     add r0, #99, r16
     sub r26, r0, r0, {C}
-    jep recursion
+    jne recursion
     xor r0, r0, r0
     ret (r31)0
     xor r0, r0, r0
