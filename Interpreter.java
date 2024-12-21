@@ -24,6 +24,8 @@ public class Interpreter
     static int [] reg;
 
     static int regBankIndex = 0;
+    static int regBankBufferInc = 0;
+    static int regBankBufferDec = 0;
     static HashMap<String, Integer> dict = new HashMap<String, Integer>();
     static int gotoLine;
     static boolean mainFound = false;
@@ -33,7 +35,6 @@ public class Interpreter
     public static void main(String[] args) {
         File file = new File("input.txt"); //to be replaced with user input
         setup();
-
         System.out.println("---START OF PROGRAM---\n");
         parse(file,line);
         System.out.println("\n---END OF PROGRAM---");
@@ -89,7 +90,13 @@ public class Interpreter
                 if (gotoLine < -1) finalLine = true;
 
                 if (nl <= -1) parse(f,l+1);
-                else parse(f,nl);
+                else
+                {
+                    regBankIndex += regBankBufferInc - regBankBufferDec;
+                    regBankBufferDec = 0;
+                    regBankBufferInc = 0;
+                    parse(f,nl);
+                }
             }
             else
             {
@@ -97,6 +104,8 @@ public class Interpreter
                 if (!mainFound)
                 {
                     mainFound = true;
+                    //String[] a = dict.keySet().toArray(new String[0]);
+                    //for (String st : a) System.out.println(st);
                     if (dict.containsKey("main")) parse(f,dict.get("main")+1);
                     else {
                         setErrorProtocol(3,-1,null);
@@ -123,6 +132,7 @@ public class Interpreter
 
     public static void lex(String data, int line)
     {
+        data = data.strip();
         if (data.contains(";"))
         {
             data = data.substring(0,data.indexOf(';'));
@@ -132,7 +142,9 @@ public class Interpreter
             data = data.replace(":","");
             if (dict.containsKey(data))
             {
-                setErrorProtocol(0,line,new String[]{data});
+                if (dict.get(data) != line) {
+                    setErrorProtocol(0, line, new String[]{data});
+                }
             }else
             {
                 dict.put(data,line);
@@ -140,7 +152,7 @@ public class Interpreter
             return;
         }
         if (!mainFound) return;
-        if (data.toLowerCase().contains("callr "))
+        if (data.toLowerCase().startsWith("callr "))
         {
             data = data.replaceAll("(?i)callr ", "");
             data = data.replace(" ", "");
@@ -154,11 +166,45 @@ public class Interpreter
             int op1 = StringToVal(args[0]);
             int dest = getRegisterIndexFromString(args[1]);
             updateRegister(dest,line+1);
-            regBankIndex++;
+            regBankBufferInc++;
             gotoLine = op1+1;
             return;
         }
-        if (data.toLowerCase().contains("ret "))
+
+        if (data.toLowerCase().startsWith("j"))
+        {
+            data = data.substring(1);
+            String[] args = data.split(" ");
+            //for (String s : args) System.out.println(s);
+            int jumpTo = 0;
+            if (args.length < 2)
+            {
+                setErrorProtocol(1,line,new String[]{"2", Integer.toString(args.length)});
+                return;
+            }
+            if (dict.get(args[1]) != null)
+            {
+                jumpTo = dict.get(args[1]);
+            }else
+            {
+                setErrorProtocol(6,line,new String[]{args[1]});
+                return;
+            }
+            if (args[0].equals("eq"))
+            {
+                if (zeroFlag) gotoLine = jumpTo+1;
+                return;
+            }
+            if (args[0].equals("ne"))
+            {
+                if (!zeroFlag) gotoLine = jumpTo+1;
+                System.out.printf("Jump:%b,Line:%d",zeroFlag,jumpTo);
+                return;
+            }
+
+        }
+
+        if (data.toLowerCase().startsWith("ret "))
         {
             data = data.replaceAll("(?i)ret ", "");
             data = data.replace(" ", "");
@@ -172,7 +218,7 @@ public class Interpreter
             }
             int op1 = StringToVal(args[0]);
             int offset = Integer.parseInt(args[1]);
-            if (regBankIndex > 0) regBankIndex--;
+            if (regBankIndex > 0) regBankBufferDec++;
             //System.out.println(regBankIndex);
             gotoLine = op1+offset+1;
             return;
@@ -191,7 +237,7 @@ public class Interpreter
     public static boolean applyOperator(String data,int line,String token, char operator)
     {
 
-        if (data.toLowerCase().contains(token)) {
+        if (data.toLowerCase().startsWith(token)) {
             data = data.replaceAll("(?i)" + token, "");
             data = data.replace(" ", "");
             String[] args = data.split(",");
@@ -322,6 +368,9 @@ public class Interpreter
                 break;
             case 5:
                 e+= "No delay slot / instruction after final return";
+                break;
+            case 6:
+                e+= "Tag \""+ args[0] + "\" does not exist in the program";
                 break;
             default:
                 e += "Unkown Error";

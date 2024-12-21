@@ -1,17 +1,23 @@
 my_func:
-    add r1, #100, r1
-    add r26, #10, r26
+    add r0, #99, r16
+    sub r26, r0, r0, {C}
+    jne recursion
+    xor r0, r0, r0
     ret (r31)0
     xor r0, r0, r0
+recursion:
+    add r1, r26, r1
+    callr my_func, r15
+    sub r26, #1, r10
+    ret (r31)0
+    xor r0, r0, r0
+
+
 main:
-    add r1, #10, r1 ;comment
-    sub r1, #10, r10, {C}
-
-    ;add r0, #5, r10
-    ;callr my_func, r15
-    ;add r1, #5, r1
-    ;add r1, #10, r1
-    ;sub r1, #20, r1
+    add r0, #0, r1
+    add r0, #16, r16
+    add r0, #5, r10
+    callr my_func, r15
+    add r0, #5, r10
     ret (r31)0
     xor r0, r0, r0
-
