@@ -198,9 +198,31 @@ public class Interpreter
             if (args[0].equals("ne"))
             {
                 if (!zeroFlag) gotoLine = jumpTo+1;
-                System.out.printf("Jump:%b,Line:%d",zeroFlag,jumpTo);
                 return;
             }
+            if (args[0].equals("lt"))
+            {
+                if (negativeFlag) gotoLine = jumpTo+1;
+                return;
+            }
+            if (args[0].equals("le"))
+            {
+                if (negativeFlag || zeroFlag) gotoLine = jumpTo+1;
+                return;
+            }
+            if (args[0].equals("gt"))
+            {
+                if (!negativeFlag) gotoLine = jumpTo+1;
+                return;
+            }
+            if (args[0].equals("ge"))
+            {
+                if ((!negativeFlag) || zeroFlag) gotoLine = jumpTo+1;
+                return;
+            }
+
+            setErrorProtocol(7,line,new String[]{args[0]});
+            return;
 
         }
 
@@ -371,6 +393,9 @@ public class Interpreter
                 break;
             case 6:
                 e+= "Tag \""+ args[0] + "\" does not exist in the program";
+                break;
+            case 7:
+                e+= "\"j"+ args[0] + "\" is not a valid jump condition";
                 break;
             default:
                 e += "Unkown Error";
