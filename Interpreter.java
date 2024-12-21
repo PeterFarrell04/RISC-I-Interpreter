@@ -14,6 +14,10 @@ public class Interpreter
     static int parentParamsUpTo = 31;
 
     //global variables
+    static boolean zeroFlag = false;
+    static boolean carryFlag = false;
+    static boolean overflowFlag = false;
+    static boolean negativeFlag = false;
     static boolean returnOnErrors = false;
     static int errorFlag = -1;
     static String errorString = "";
@@ -38,6 +42,7 @@ public class Interpreter
         debugPrintRegisters(0, 137);
 
         System.out.println("Total Errors: " + errorCount);
+        debugPrintFlags();
 
     }
 
@@ -186,31 +191,38 @@ public class Interpreter
     public static boolean applyOperator(String data,int line,String token, char operator)
     {
 
-        if (data.toLowerCase().contains(token))
-        {
-            data = data.replaceAll("(?i)"+token, "");
+        if (data.toLowerCase().contains(token)) {
+            data = data.replaceAll("(?i)" + token, "");
             data = data.replace(" ", "");
             String[] args = data.split(",");
-            if (args.length < 3)
-            {
-                setErrorProtocol(1,line,new String[]{"3", Integer.toString(args.length)});
+            if (args.length < 3) {
+                setErrorProtocol(1, line, new String[]{"3", Integer.toString(args.length)});
                 return true;
             }
             int op1 = getRegisterContents(getRegisterIndexFromString(args[0]));
             int op2 = StringToVal(args[1]);
             int destIndex = getRegisterIndexFromString(args[2]);
             int result = 0;
-            switch (operator)
-            {
+            switch (operator) {
                 case '+':
-                    result = op1+op2;
+                    result = op1 + op2;
                     break;
                 case '-':
-                    result = op1-op2;
+                    result = op1 - op2;
                     break;
                 case '^':
-                    result = op1^op2;
+                    result = op1 ^ op2;
                     break;
+            }
+            if (args.length > 3)
+            {
+                if (args[3].equals("{C}"))
+                {
+                    zeroFlag = (result==0);
+                    negativeFlag = (result<0);
+                    carryFlag = (op1 >= op2);
+                    overflowFlag = ((Math.signum(op1) != Math.signum(op2)) && (Math.signum(op1) != Math.signum(result)));
+                }
             }
             updateRegister(destIndex,result);
             return true;
@@ -219,6 +231,8 @@ public class Interpreter
             return false;
         }
     }
+
+
 
     public static int getRegisterContents(int index)
     {
@@ -276,35 +290,7 @@ public class Interpreter
         return -1000; //replace with proper error handling
     }
 
-    public static void debugPrintRegisters(int start,int end)
-    {
-        char rank = 65;
-        int count = 31;
-        for (int i = end; i >= start; i--)
-        {
-            String type = "";
-            if (i < 10) type = "Global";
-            if (i >= 10)
-            {
-                type = rank+":"+count;
-                if (count <= 15)
-                {
-                    char next = (char) (rank+1);
-                    type = next + ":" + (count+16) + "&" + type;
-                }
-                count--;
-                if (count < 10)
-                {
-                    rank++;
-                    count = 25;
-                }
-            }
 
-
-
-            System.out.println("("+type+"):"+"R" + i + " = " + reg[i] + ",");
-        }
-    }
 
     public static void setErrorProtocol(int flag, int line,String[] args)
     {
@@ -343,6 +329,41 @@ public class Interpreter
         }
 
         errorString = e;
+    }
+
+    public static void debugPrintRegisters(int start,int end)
+    {
+        char rank = 65;
+        int count = 31;
+        for (int i = end; i >= start; i--)
+        {
+            String type = "";
+            if (i < 10) type = "Global";
+            if (i >= 10)
+            {
+                type = rank+":"+count;
+                if (count <= 15)
+                {
+                    char next = (char) (rank+1);
+                    type = next + ":" + (count+16) + "&" + type;
+                }
+                count--;
+                if (count < 10)
+                {
+                    rank++;
+                    count = 25;
+                }
+            }
+
+
+
+            System.out.println("("+type+"):"+"R" + i + " = " + reg[i] + ",");
+        }
+    }
+
+    public static void debugPrintFlags()
+    {
+        System.out.printf("Zero: %b, Negative: %b, Carry: %b, Overflow: %b",zeroFlag,negativeFlag,carryFlag,overflowFlag);
     }
 
 }

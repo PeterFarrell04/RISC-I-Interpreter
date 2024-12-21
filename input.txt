@@ -4,12 +4,14 @@ my_func:
     ret (r31)0
     xor r0, r0, r0
 main:
-    add r1, #5, r1 ;comment
-    add r0, #5, r10
-    callr my_func, r15
-    add r1, #5, r1
-    add r1, #10, r1
-    sub r1, #20, r1
+    add r1, #10, r1 ;comment
+    sub r1, #10, r10, {C}
+
+    ;add r0, #5, r10
+    ;callr my_func, r15
+    ;add r1, #5, r1
+    ;add r1, #10, r1
+    ;sub r1, #20, r1
     ret (r31)0
     xor r0, r0, r0
 
