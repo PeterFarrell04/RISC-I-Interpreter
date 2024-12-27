@@ -1,8 +1,6 @@
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Scanner;
 
 public class Interpreter
@@ -23,9 +21,12 @@ public class Interpreter
     static String errorString = "";
     static int [] reg;
 
-    static int regBankIndex = 0;
-    static int regBankBufferInc = 0;
-    static int regBankBufferDec = 0;
+    static int regBanks = 8;
+
+    static int saveWindowPointer = 0;
+    static int currentWindowPointer = 8;
+    static int currentWindowPointerInc = 0;
+    static int currentWindowPointerDec = 0;
     static HashMap<String, Integer> dict = new HashMap<String, Integer>();
     static int gotoLine;
     static boolean mainFound = false;
@@ -92,9 +93,9 @@ public class Interpreter
                 if (nl <= -1) parse(f,l+1);
                 else
                 {
-                    regBankIndex += regBankBufferInc - regBankBufferDec;
-                    regBankBufferDec = 0;
-                    regBankBufferInc = 0;
+                    currentWindowPointer += currentWindowPointerInc - currentWindowPointerDec;
+                    currentWindowPointerDec = 0;
+                    currentWindowPointerInc = 0;
                     parse(f,nl);
                 }
             }
@@ -166,7 +167,7 @@ public class Interpreter
             int op1 = StringToVal(args[0]);
             int dest = getRegisterIndexFromString(args[1]);
             updateRegister(dest,line+1);
-            regBankBufferInc++;
+            currentWindowPointerInc++;
             gotoLine = op1+1;
             return;
         }
@@ -245,7 +246,7 @@ public class Interpreter
             }
             int op1 = StringToVal(args[0]);
             int offset = Integer.parseInt(args[1]);
-            if (regBankIndex > 0) regBankBufferDec++;
+            if (currentWindowPointer > 0) currentWindowPointerDec++;
             //System.out.println(regBankIndex);
             gotoLine = op1+offset+1;
             return;
@@ -283,32 +284,16 @@ public class Interpreter
             int op1 = getRegisterContents(getRegisterIndexFromString(args[0]));
             int op2 = StringToVal(args[1]);
             int destIndex = getRegisterIndexFromString(args[2]);
-            int result = 0;
-            switch (operator) {
-                case "+":
-                    result = op1 + op2;
-                    break;
-                case "-":
-                    result = op1 - op2;
-                    break;
-                case "^":
-                    result = op1 ^ op2;
-                    break;
-                case "|":
-                    result = op1 | op2;
-                    break;
-                case "&":
-                    result = op1 & op2;
-                    break;
-                case "<<":
-                    result = op1 << op2;
-                    break;
-                case ">>":
-                    result = op1 >> op2;
-                    break;
-
-
-            }
+            int result = switch (operator) {
+                case "+" -> op1 + op2;
+                case "-" -> op1 - op2;
+                case "^" -> op1 ^ op2;
+                case "|" -> op1 | op2;
+                case "&" -> op1 & op2;
+                case "<<" -> op1 << op2;
+                case ">>" -> op1 >> op2;
+                default -> 0;
+            };
             if (args.length > 3)
             {
                 if (args[3].equals("{C}"))
@@ -334,7 +319,13 @@ public class Interpreter
         if (index <= globalUpTo) {
             return reg[index];
         }else {
-            return reg[(16*(8-regBankIndex)) - (31-index)+9];
+            if (currentWindowPointer < regBanks || index > 15) {
+                if (currentWindowPointer < regBanks) return reg[(16 * (regBanks - currentWindowPointer)) - (31 - index) + (regBanks + 1)];
+                else return reg[index-6];
+            }else
+            {
+                return reg[(reg.length-16)+index];
+            }
         }
     }
 
@@ -345,7 +336,13 @@ public class Interpreter
             if (index <= globalUpTo) {
                 reg[index] = value;
             }else {
-                reg[(16*(8-regBankIndex)) - (31-index)+9] = value;
+                if (currentWindowPointer < regBanks || index > 15) {
+                    if (currentWindowPointer < regBanks) reg[(16 * (regBanks - currentWindowPointer)) - (31 - index) + (regBanks + 1)] = value;
+                    else reg[index-6] = value;
+                }else
+                {
+                    reg[(reg.length-16)+index] = value;
+                }
             }
         }
     }
