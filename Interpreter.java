@@ -6,6 +6,8 @@ import java.util.Scanner;
 public class Interpreter
 {
     //options for calling convention
+    static int[][] memory = new int[256][16];
+    static int stackPointer = 0;
     static int globalUpTo = 9;
     static int childParamsUpTo = 15;
     static int localVarsUpTo = 25;
@@ -24,7 +26,7 @@ public class Interpreter
     static int regBanks = 8;
 
     static int saveWindowPointer = 0;
-    static int currentWindowPointer = 8;
+    static int currentWindowPointer = 1;
     static int currentWindowPointerInc = 0;
     static int currentWindowPointerDec = 0;
     static HashMap<String, Integer> dict = new HashMap<String, Integer>();
@@ -61,13 +63,17 @@ public class Interpreter
 
     public static void parse(File f,int lineStart)
     {
-        //if (mainFound) debugPrintRegisters(1,1);
         int nl = -1;
-
+        //System.out.println(gotoLine);
         if (gotoLine != -1)
         {
-            nl = gotoLine;
-            gotoLine = -1;
+            if (gotoLine == -9)
+            {
+                finalLine = true;
+            }else {
+                nl = gotoLine;
+                gotoLine = -1;
+            }
         }
         int l = -1;
         try {
@@ -79,8 +85,6 @@ public class Interpreter
                 l++;
             }
             lex(data,l);
-
-            //System.out.println(data);
             if (errorFlag != -1)
             {
                 System.out.println(errorString);
@@ -88,8 +92,6 @@ public class Interpreter
             }
             if (s.hasNextLine() && !finalLine)
             {
-                if (gotoLine < -1) finalLine = true;
-
                 if (nl <= -1) parse(f,l+1);
                 else
                 {
@@ -105,8 +107,6 @@ public class Interpreter
                 if (!mainFound)
                 {
                     mainFound = true;
-                    //String[] a = dict.keySet().toArray(new String[0]);
-                    //for (String st : a) System.out.println(st);
                     if (dict.containsKey("main")) parse(f,dict.get("main")+1);
                     else {
                         setErrorProtocol(3,-1,null);
@@ -165,9 +165,11 @@ public class Interpreter
                 return;
             }
             int op1 = StringToVal(args[0]);
+            System.out.println("go to " + op1);
             int dest = getRegisterIndexFromString(args[1]);
+            //System.out.println(line+1);
             updateRegister(dest,line+1);
-            currentWindowPointerInc++;
+            currentWindowPointerDec++;
             gotoLine = op1+1;
             return;
         }
@@ -176,7 +178,6 @@ public class Interpreter
         {
             data = data.substring(1);
             String[] args = data.split(" ");
-            //for (String s : args) System.out.println(s);
             int jumpTo = 0;
             if (args.length < 2)
             {
@@ -244,11 +245,14 @@ public class Interpreter
                 setErrorProtocol(1,line,new String[]{"2", Integer.toString(args.length)});
                 return;
             }
-            int op1 = StringToVal(args[0]);
+            int op1 =  getRegisterContents(getRegisterIndexFromString(args[0]));
             int offset = Integer.parseInt(args[1]);
-            if (currentWindowPointer > 0) currentWindowPointerDec++;
-            //System.out.println(regBankIndex);
+            System.out.println(op1);
+            if (currentWindowPointer < 8) currentWindowPointerInc++;
+
             gotoLine = op1+offset+1;
+            System.out.println("return to " + (op1+offset+1));
+
             return;
         }
         //standard operators
@@ -319,13 +323,10 @@ public class Interpreter
         if (index <= globalUpTo) {
             return reg[index];
         }else {
-            if (currentWindowPointer < regBanks || index > 15) {
-                if (currentWindowPointer < regBanks) return reg[(16 * (regBanks - currentWindowPointer)) - (31 - index) + (regBanks + 1)];
-                else return reg[index-6];
-            }else
-            {
-                return reg[(reg.length-16)+index];
-            }
+            int actualIndex = (16*(regBanks-(regBanks-currentWindowPointer))) - (31-index)+9;
+            if (actualIndex <= 9) actualIndex += 128;
+            System.out.println(actualIndex+"-"+index);
+            return reg[actualIndex];
         }
     }
 
@@ -336,13 +337,9 @@ public class Interpreter
             if (index <= globalUpTo) {
                 reg[index] = value;
             }else {
-                if (currentWindowPointer < regBanks || index > 15) {
-                    if (currentWindowPointer < regBanks) reg[(16 * (regBanks - currentWindowPointer)) - (31 - index) + (regBanks + 1)] = value;
-                    else reg[index-6] = value;
-                }else
-                {
-                    reg[(reg.length-16)+index] = value;
-                }
+                int actualIndex = (16*(regBanks-(regBanks-currentWindowPointer))) - (31-index)+9;
+                if (actualIndex <= 9) actualIndex += 128;
+                reg[actualIndex] = value;
             }
         }
     }
@@ -380,6 +377,24 @@ public class Interpreter
         }
         setErrorProtocol(2,-1,new String[]{s});
         return -1000; //replace with proper error handling
+    }
+
+    public static void pushToStack(int index)
+    {
+        int tempWindowPointer = currentWindowPointer;
+        currentWindowPointer = saveWindowPointer;
+        for (var i = 0; i <= 15; i++)
+        {
+            memory[stackPointer][i] = getRegisterContents(i+10);
+        }
+        saveWindowPointer++;
+        stackPointer++;
+        currentWindowPointer = tempWindowPointer;
+    }
+
+    public static void popFromStack(int index)
+    {
+        //TODO
     }
 
 
